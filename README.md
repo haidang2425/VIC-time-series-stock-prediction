@@ -1,4 +1,4 @@
-# Phân Tích & Dự Báo Giá Cổ Phiếu VIC (Vingroup) bằng Mô Hình Chuỗi Thời Gian
+# 📈 Phân Tích & Dự Báo Giá Cổ Phiếu VIC (Vingroup) bằng Mô Hình Chuỗi Thời Gian & Học Máy
 
 <div align="center">
 
@@ -6,254 +6,323 @@
 ![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-F37626?style=for-the-badge&logo=jupyter&logoColor=white)
 ![Prophet](https://img.shields.io/badge/Meta-Prophet-0668E1?style=for-the-badge&logo=meta&logoColor=white)
 ![Optuna](https://img.shields.io/badge/Optuna-HPO-6DB3F2?style=for-the-badge)
-![ARIMA](https://img.shields.io/badge/Statsmodels-ARIMA-yellow?style=for-the-badge)
+![ARIMA](https://img.shields.io/badge/Statsmodels-ARIMA%2FGARCH-yellow?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-Academic-green?style=for-the-badge)
 
-**Ứng dụng Time Series Analysis & Machine Learning để dự báo biến động giá cổ phiếu VIC.VN trên thị trường chứng khoán Việt Nam**
+**Pipeline dự báo chuỗi thời gian tài chính toàn diện — từ ARIMA cổ điển đến Ensemble & GARCH — áp dụng cho mã cổ phiếu VIC.VN trên HOSE**
 
 </div>
 
 ---
 
-|  |  |
-|---|---|
+## 📌 Thông Tin Dự Án
+
+| Danh mục | Chi tiết |
+| :--- | :--- |
 | **Môn học** | AIE301m – Ứng dụng Học máy trong Tài chính |
-| **Sinh viên** | Trịnh Hải Đăng – HE194363 |
+| **Sinh viên thực hiện** | Trịnh Hải Đăng – HE194363 |
 | **Trường** | Đại học FPT |
 | **Thời gian** | Học kỳ 8, Năm học 2025–2026 |
+| **Notebook chính** | [`VIC_ARMIA_Analysis_Ver03.ipynb`](notebooks/VIC_ARMIA_Analysis_Ver03.ipynb) |
 
 ---
 
-## Mục lục
-
-1. [Tổng quan dự án](#1-tổng-quan-dự-án)
-2. [Phương pháp luận](#2-phương-pháp-luận)
-3. [Kiến trúc & Pipeline](#3-kiến-trúc--pipeline)
-4. [Cấu trúc thư mục](#4-cấu-trúc-thư-mục)
-5. [Hướng dẫn cài đặt](#5-hướng-dẫn-cài-đặt)
-6. [Tiêu chí đánh giá](#6-tiêu-chí-đánh-giá)
-7. [Kết quả thực nghiệm](#7-kết-quả-thực-nghiệm)
-8. [Thảo luận & Hướng phát triển](#8-thảo-luận--hướng-phát-triển)
-9. [Tuyên bố miễn trách](#9-tuyên-bố-miễn-trách)
-
----
-
-## 1. Tổng quan dự án
-
-Dự án xây dựng một **pipeline dự báo chuỗi thời gian (Time Series Forecasting Pipeline)** hoàn chỉnh nhằm mô hình hóa và dự báo giá đóng cửa của mã cổ phiếu **VIC.VN** (Tập đoàn Vingroup) — một trong những bluechip hàng đầu trên sàn HOSE.
-
-Dữ liệu giá lịch sử được thu thập trực tiếp từ **Yahoo Finance API** và được kiểm định trên giai đoạn thực tế từ `15/05/2025` đến `26/05/2026`.
-
-**Điểm nổi bật của dự án:**
-
-- Áp dụng chiến lược **Walk-Forward Backtesting** nghiêm ngặt — mô hình **không bao giờ được tiếp xúc với dữ liệu tương lai** trong quá trình huấn luyện.
-- So sánh có hệ thống **4 mô hình** từ cổ điển thống kê đến hiện đại, với phân tích định lượng rõ ràng.
-- Tích hợp **Optuna** — framework tối ưu hóa siêu tham số (Hyperparameter Optimization) theo hướng out-of-sample, giải quyết điểm yếu cốt lõi của Auto-ARIMA truyền thống.
-- Kết hợp đầu ra của nhiều mô hình qua **Ensemble Learning** để tối thiểu hóa phương sai sai số tổng thể.
+## 📑 Mục Lục
+- [1. Tổng Quan Dự Án](#1-tổng-quan-dự-án)
+- [2. Phương Pháp Luận & Cơ Sở Toán Học](#2-phương-pháp-luận--cơ-sở-toán-học)
+- [3. Kiến Trúc & Pipeline Dự Báo](#3-kiến-trúc--pipeline-dự-báo)
+- [4. Hướng Dẫn Cài Đặt](#4-hướng-dẫn-cài-đặt)
+- [5. Kết Quả Thực Nghiệm](#5-kết-quả-thực-nghiệm)
+- [6. Kết Quả Từng Cấp Độ](#6-kết-quả-từng-cấp-độ)
+- [7. Bảng Xếp Hạng Toàn Diện](#7-bảng-xếp-hạng-toàn-diện)
+- [8. Thảo Luận & Giới Hạn](#8-thảo-luận--giới-hạn)
+- [9. Tuyên Bố Miễn Trách](#9-tuyên-bố-miễn-trách)
 
 ---
 
-## 2. Phương pháp luận
+## 1. Tổng Quan Dự Án
 
-Dự án được phát triển tuần tự qua **4 cấp độ mô hình**, mỗi cấp khắc phục điểm yếu của cấp trước, tạo thành một lộ trình nghiên cứu có tư duy:
+### 1.1 Bối Cảnh & Ý Nghĩa Thực Tiễn
+Dự án xây dựng một **Pipeline dự báo chuỗi thời gian tài chính (Financial Time Series Forecasting Pipeline)** toàn diện áp dụng cho mã cổ phiếu **VIC.VN** (Tập đoàn Vingroup) — một trong những mã cổ phiếu Bluechip có sức ảnh hưởng và vốn hóa hàng đầu trên Sở Giao dịch Chứng khoán TP.HCM (HOSE).
 
-### Cấp độ 1 — Auto-ARIMA (Baseline)
+Mục tiêu chính là khảo sát khả năng dự báo từ các mô hình tự hồi quy tuyến tính cổ điển đến các mô hình kết hợp phi tuyến và các phương pháp định lượng tài chính hiện đại nhằm giải quyết hai bài toán cốt lõi:
+1. **Dự báo giá trị kỳ vọng (Price Forecasting):** Đưa ra ước lượng điểm tốt nhất cho giá cổ phiếu trong tương lai ngắn hạn.
+2. **Định lượng mức độ bất định (Volatility & Risk Modeling):** Xác định khoảng dao động rủi ro xung quanh mức giá dự báo bằng mô hình GARCH.
 
-> *"Bắt đầu từ nền tảng cổ điển để thiết lập đường cơ sở (baseline) so sánh."*
+### 1.2 Dữ Liệu & Chiến Lược Phân Chia
+Dữ liệu giá lịch sử được tải trực tiếp từ **Yahoo Finance API** trong khoảng thời gian 2 năm (16/06/2024 → 16/06/2026), tương đương ~500 phiên giao dịch.
 
-- Sử dụng thuật toán **Grid Search** tự động tìm kiếm tổ hợp siêu tham số $(p, d, q)$ tối ưu dựa trên tiêu chí **AIC** (Akaike Information Criterion).
-- **Hạn chế được ghi nhận:** Tối ưu hóa trên tập huấn luyện dễ dẫn đến **Overfitting** hoặc mô hình hội tụ về **Random Walk** khi dữ liệu có nhiễu cao.
+| Tập Dữ Liệu | Số Phiên | Khoảng Thời Gian | Mục Đích |
+| :--- | :---: | :--- | :--- |
+| **Train Set** | ~490 | 16/06/2024 → 02/06/2026 | Huấn luyện mô hình |
+| **Validation Set** | ~49 | 10% cuối của Train Set | Tối ưu siêu tham số Optuna (Out-of-Sample) |
+| **Test Set** | 10 | 03/06/2026 → 16/06/2026 | Đánh giá độ chính xác cuối cùng |
 
-### Cấp độ 2 — Optuna-ARIMA (Out-of-sample Optimization)
-
-> *"Tối ưu hóa mô hình dựa trên khả năng dự báo thực tế, không phải trên dữ liệu đã biết."*
-
-- Tích hợp framework **Optuna** (Bayesian / TPE Sampler) để thay thế Grid Search truyền thống.
-- Tách riêng **10% dữ liệu** làm `Validation Set` ẩn. Optuna tìm bộ $(p, d, q)$ tối thiểu hóa **RMSE trên Validation Set** — tức là tìm mô hình *tốt nhất cho tương lai*, không phải tốt nhất cho quá khứ.
-
-### Cấp độ 3 — Meta Prophet (Decomposable Time Series Model)
-
-> *"Bắt các xu hướng phi tuyến tính mà ARIMA bỏ sót."*
-
-- Mô hình chuỗi thời gian phân rã (**Decomposable Time Series**) do nhóm **Core Data Science của Meta** phát triển.
-- Mạnh mẽ trong việc phát hiện **Trend Changepoints** — các điểm gãy xu hướng đột ngột đặc trưng của thị trường tài chính.
-- Không yêu cầu dữ liệu phải **stationary**, phù hợp với chuỗi giá tuyệt đối (absolute price).
-
-### Cấp độ 4 — Ensemble Model (State-of-the-art)
-
-> *"Kết hợp thế mạnh của nhiều mô hình để vượt qua giới hạn của từng mô hình đơn lẻ."*
-
-- Áp dụng triết lý **Ensemble Learning**: lấy **trung bình trọng số** dự báo của (Auto-ARIMA + Prophet).
-- **Mục tiêu:** ARIMA đóng góp khả năng bắt **cấu trúc tự hồi quy (Lag structure)**; Prophet đóng góp khả năng bám sát **xu hướng dài hạn (Trend)**. Kết hợp hai nguồn thông tin bổ sung nhau giúp giảm phương sai sai số tổng thể.
+> **Lưu ý:** Để tránh triệt để **Data Leakage**, dự án áp dụng chiến lược **Walk-Forward Rolling Forecast**: Tại mỗi bước dự báo $t$, mô hình chỉ được huấn luyện trên dữ liệu từ đầu đến $t-1$, sau đó cửa sổ dịch thêm 1 phiên.
 
 ---
 
-## 3. Kiến trúc & Pipeline
+## 2. Phương Pháp Luận & Cơ Sở Toán Học
+Dự án được thiết kế theo lộ trình **7 cấp độ**, từ baseline truyền thống đến hệ thống lai hiện đại.
 
+### 2.1 Cấp Độ 1 — Quy Trình Box-Jenkins & Mô Hình ARIMA
+Mô hình $\text{ARIMA}(p, d, q)$ mô tả chuỗi thời gian dừng sau khi sai phân bậc $d$:
+$$\Phi_p(B)(1-B)^d Y_t = \Theta_q(B)\varepsilon_t$$
+Quy trình Box-Jenkins được tuân thủ nghiêm ngặt qua 3 bước:
+- **Nhận dạng:** ADF Test, ACF/PACF (Chuỗi gốc không dừng, sai phân bậc 1 $\rightarrow$ dừng).
+- **Ước lượng:** Grid Search AIC/BIC trên không gian $(p,q) \in [0,4]^2$ để xác định order tối ưu.
+- **Chẩn đoán:** Ljung-Box Test, Q-Q Plot (Đảm bảo phần dư không còn tự tương quan).
+
+### 2.2 Cấp Độ 2 — Tối Ưu Siêu Tham Số Bằng Optuna (Out-of-Sample)
+Thay vì tối thiểu hoá AIC in-sample (dễ overfitting), Optuna dùng **TPE Sampler** để tối thiểu hoá RMSE trực tiếp trên tập Validation ẩn:
+$$\text{Objective} = \min_{(p,d,q)} \sqrt{\frac{1}{N_{val}} \sum_{t \in \text{Val}} \left(Y_t - \hat{Y}_t\right)^2}$$
+- **Cấu hình:** 80 trials với seed cố định để tái lập kết quả.
+
+### 2.3 Cấp Độ 3 — Meta Prophet (Decomposable Model)
+Prophet phân rã chuỗi thành các thành phần cộng tính:
+$$y(t) = g(t) + s(t) + h(t) + \varepsilon_t$$
+Trong đó $g(t)$ là xu hướng phi tuyến (changepoints tự động), $s(t)$ là tính mùa vụ (chuỗi Fourier), $h(t)$ là ảnh hưởng ngày lễ.
+
+### 2.4 Cấp Độ 4 — Ensemble ARIMA + Prophet
+Kết hợp hai mô hình bổ trợ lẫn nhau bằng trung bình có trọng số:
+$$\hat{y}_t^{\text{Ensemble}} = w \cdot \hat{y}_t^{\text{ARIMA}} + (1-w) \cdot \hat{y}_t^{\text{Prophet}}$$
+Trọng số tối ưu $w^*$ được tìm bằng **Grid Search** trên tập Validation (bước nhảy 0.05).
+
+### 2.5 Cấp Độ 5 — ARIMA Trên Lợi Suất Logarit
+Chuyển đổi giá tuyệt đối thành lợi suất Logarit để đảm bảo tính dừng tự nhiên:
+$$R_t = \ln\left(\frac{P_t}{P_{t-1}}\right)$$
+Khôi phục giá từ lợi suất dự báo: $\hat{P}_t = P_{t-1} \cdot e^{\hat{R}_t}$
+
+### 2.6 Cấp Độ 6 — Mô Hình Hoá Biến Động GARCH(1,1)
+Định lượng rủi ro biến động bằng GARCH(1,1) trên chuỗi lợi suất:
+$$\sigma_t^2 = \omega + \alpha\varepsilon_{t-1}^2 + \beta\sigma_{t-1}^2$$
+Cung cấp **khoảng tin cậy động** cho mỗi ngày dự báo: $\hat{P}_t \pm 2\sigma_t^{\text{GARCH}} \cdot \hat{P}_t$ (điều kiện ổn định $\alpha + \beta < 1$).
+
+### 2.7 Cấp Độ 7 — ARIMAX (Tích Hợp Biến Ngoại Sinh Vĩ Mô)
+Tích hợp chỉ số VN-Index và tỷ giá USD/VND làm biến ngoại sinh trễ 1 phiên:
+$$Y_t = \beta X_{t-1} + \eta_t$$
+Pipeline tự động **fallback** sang ARIMA đơn biến nếu tải dữ liệu ngoại sinh thất bại.
+
+---
+
+## 3. Kiến Trúc & Pipeline Dự Báo
+
+```mermaid
+flowchart TB
+    classDef datasource fill:#E3F2FD,stroke:#1565C0,stroke-width:2px,color:#0D47A1;
+    classDef process fill:#FFF3E0,stroke:#EF6C00,stroke-width:2px,color:#E65100;
+    classDef baseline fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px,color:#1B5E20;
+    classDef advanced fill:#F3E5F5,stroke:#6A1B9A,stroke-width:2px,color:#4A148C;
+    classDef evaluation fill:#FFEBEE,stroke:#C62828,stroke-width:2px,color:#B71C1C;
+    classDef decBlock fill:#FFFDE7,stroke:#FBC02D,stroke-width:2px,color:#F57F17;
+
+    subgraph DATA ["① Thu Thập & Tiền Xử Lý"]
+        A["Yahoo Finance API"]:::datasource
+        B("Làm sạch & EDA"):::process
+        C("Biến ngoại sinh vĩ mô"):::process
+    end
+
+    subgraph BASELINE ["② Baseline — Box-Jenkins"]
+        D{"ADF Test"}:::decBlock
+        E["Sai phân d=1"]:::process
+        F["Giá gốc d=0"]:::process
+        G("AR / MA / ARIMA"):::baseline
+    end
+
+    subgraph PIPELINE ["③ Pipeline Nâng Cao — 7 Cấp Độ"]
+        I("Lv2: Optuna-ARIMA HPO"):::advanced
+        J("Chọn tham số tối ưu"):::process
+        K("Lv3: Meta Prophet"):::advanced
+        M("Lv4: Ensemble ARIMA+Prophet"):::advanced
+        N("Lv5: ARIMA on Log Returns"):::advanced
+        P("Lv6: GARCH Volatility"):::advanced
+        Q("ARIMA-GARCH Combined"):::advanced
+        R("Lv7: ARIMAX -- Biến ngoại sinh"):::advanced
+    end
+
+    subgraph EVAL ["④ Đánh Giá & Xếp Hạng"]
+        H("Walk-Forward Backtesting"):::evaluation
+        S("Dashboard & Radar Chart"):::evaluation
+        T["Bảng xếp hạng mô hình"]:::evaluation
+    end
+
+    A -->|"Giá VIC.VN"| B
+    A -->|"VNINDEX / USDVND"| C
+    B --> D
+    D -->|"Không dừng"| E
+    D -->|"Dừng"| F
+    E --> G
+    F --> G
+
+    B -->|"Validation Set"| I
+    I --> J
+    J --> H
+
+    B --> K
+    G -.->|"ARIMA Mean"| M
+    K -.->|"Prophet Mean"| M
+    M --> H
+
+    B -->|"Transform"| N
+    N --> P
+    N -.->|"Restore Price"| Q
+    P -.->|"Dynamic CI"| Q
+    Q --> H
+
+    C -.->|"Lag-1 alignment"| R
+    R --> H
+
+    G --> H
+    H --> S
+    S --> T
 ```
-Yahoo Finance API
-       │
-       ▼
-┌─────────────────────────────────────────────────────────┐
-│                   DATA INGESTION                        │
-│  Thu thập dữ liệu lịch sử VIC.VN → Xử lý missing       │
-│  values → Kiểm định tính dừng (ADF Test)                │
-└─────────────────────────┬───────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────┐
-│                  DATA SPLITTING                         │
-│                                                         │
-│   Train Set (80%)  │  Validation Set (10%)  │  Test (10%)│
-│   (Huấn luyện)     │  (Optuna Tuning)       │  (Ẩn)      │
-└─────────────────────────┬───────────────────────────────┘
-                          │
-            ┌─────────────┼─────────────┐
-            ▼             ▼             ▼
-      Auto-ARIMA    Optuna-ARIMA    Meta Prophet
-            │             │             │
-            └─────────────┼─────────────┘
-                          ▼
-                   Ensemble Model
-                  (Weighted Average)
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────┐
-│              EVALUATION ON TEST SET                     │
-│         RMSE  │  MAE  │  MAPE (Target: < 5%)           │
-└─────────────────────────────────────────────────────────┘
-```
 
 ---
 
-## 4. Cấu trúc thư mục
+## 4. Hướng Dẫn Cài Đặt
 
-```
-VIC-time-series-stock-prediction/
-│
-├── notebooks/
-│   └── VIC_Stock_ARIMA_Analysis.ipynb   # Pipeline chính: EDA → Modeling → Evaluation
-│
-├── requirements.txt                      # Dependencies (pip freeze)
-├── .gitignore                            # Loại trừ .venv, cache, checkpoints
-└── README.md                             # Tài liệu kỹ thuật (file này)
-```
+### 🖥️ Yêu Cầu Hệ Thống
+- **Python 3.9+**
+- Trình biên dịch C++ (để build `prophet` và `arch`):
+  - **Windows:** Microsoft Visual C++ Build Tools
+  - **macOS:** `xcode-select --install`
+  - **Linux:** `build-essential`
 
----
-
-## 5. Hướng dẫn cài đặt
-
-### Yêu cầu hệ thống
-
-- Python **3.9+**
-- pip **22+**
-- (Khuyến nghị) Hệ điều hành: macOS / Linux / Windows 10+
-
-### Bước 1 — Clone repository
+### ⚙️ Các Bước Cài Đặt
 
 ```bash
+# 1. Clone repository
 git clone https://github.com/haidang2425/VIC-time-series-stock-prediction.git
 cd VIC-time-series-stock-prediction
-```
 
-### Bước 2 — Tạo và kích hoạt môi trường ảo
-
-```bash
+# 2. Tạo & kích hoạt môi trường ảo
 python -m venv .venv
-
-# Windows
+# Trên Windows:
 .venv\Scripts\activate
-
-# macOS / Linux
+# Trên macOS/Linux:
 source .venv/bin/activate
-```
 
-### Bước 3 — Cài đặt dependencies
-
-> **Lưu ý:** `prophet` và `optuna` có các thành phần biên dịch C++. Đảm bảo hệ thống có **build tools** phù hợp (Visual Studio Build Tools trên Windows, `gcc` trên Linux/macOS).
-
-```bash
+# 3. Cài đặt dependencies
 python -m pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
+
+# 4. Mở notebook
+jupyter notebook notebooks/VIC_ARMIA_Analysis_Ver03.ipynb
 ```
 
-### Bước 4 — Khởi chạy Jupyter Notebook
-
-```bash
-jupyter notebook
-```
-
-Mở file `notebooks/VIC_Stock_ARIMA_Analysis.ipynb` và chạy tuần tự từng cell (`Run All`).
-
----
-
-## 6. Tiêu chí đánh giá
-
-Tất cả các mô hình được đánh giá **chỉ trên Test Set** — tập dữ liệu hoàn toàn bị ẩn trong suốt quá trình huấn luyện và tinh chỉnh.
-
-| Chỉ số | Công thức | Ý nghĩa |
-|--------|-----------|---------|
-| **RMSE** | $\sqrt{\frac{1}{n}\sum(y_i - \hat{y}_i)^2}$ | Phạt nặng các sai lệch lớn; nhạy cảm với outliers |
-| **MAE** | $\frac{1}{n}\sum\|y_i - \hat{y}_i\|$ | Sai lệch tuyệt đối trung bình (đơn vị: VNĐ) |
-| **MAPE** | $\frac{100\%}{n}\sum\left\|\frac{y_i - \hat{y}_i}{y_i}\right\|$ | Sai số theo phần trăm; **mục tiêu: MAPE < 5%** |
+### 📦 Danh Sách Thư Viện Chính
+| Thư Viện | Phiên Bản | Chức Năng |
+| :--- | :---: | :--- |
+| `yfinance` | $\ge 0.2$ | Tải dữ liệu giá từ Yahoo Finance |
+| `statsmodels` | $\ge 0.14$ | Mô hình ARIMA, kiểm định thống kê |
+| `prophet` | $\ge 1.1$ | Mô hình chuỗi thời gian Meta Prophet |
+| `arch` | $\ge 5.x$ | Mô hình GARCH biến động |
+| `optuna` | $\ge 3.x$ | Tối ưu hoá siêu tham số TPE |
+| `scikit-learn` | $\ge 1.x$ | Tính metrics đánh giá (MAE, RMSE, MAPE) |
+| `matplotlib` / `seaborn` | — | Trực quan hoá dữ liệu |
 
 ---
 
-## 7. Kết quả thực nghiệm
+## 5. Kết Quả Thực Nghiệm
 
-> *Bảng kết quả sẽ được cập nhật sau khi hoàn thành vòng Backtesting trên tập Test Set thực tế.*
+### 5.1 Phân Tích Khám Phá Dữ Liệu (EDA)
+**Nhận xét:**
+- Chuỗi giá gốc **không dừng** (Non-stationary): Xu hướng thay đổi liên tục $\rightarrow$ Cần sai phân bậc 1.
+- Phân phối Daily Return gần chuẩn nhưng có Fat Tails (đặc trưng điển hình của dữ liệu tài chính).
+- Heatmap lợi suất theo tháng cho thấy biến động không đều giữa các năm.
+- Bollinger Bands (±2σ) phản ánh các giai đoạn biến động mạnh.
 
-| Mô hình | RMSE (VNĐ) | MAE (VNĐ) | MAPE (%) | Ghi chú |
-|---------|:---------:|:--------:|:-------:|---------|
-| Auto-ARIMA | 11,007 | 9,316 | 4.28% | Baseline |
-| Optuna-ARIMA (0,2,0) | 2,321 | 2,086 | **0.95%** | Best single model |
-| Meta Prophet | 7,330 | 5,888 | 2.71% | |
-| **Ensemble** (ARIMA + Prophet) | **9,038** | **6,925** | **3.20%** | Combined |
+### 5.2 Kiểm Định Tính Dừng (ADF Test)
+| Chuỗi | ADF Statistic | p-value | Kết Luận |
+| :--- | :---: | :---: | :--- |
+| **Giá đóng cửa gốc** | ~ -1.8 | > 0.05 | ❌ Không dừng |
+| **Sai phân bậc 1** | < -20 | < 0.001 | ✅ Dừng |
+$\rightarrow$ **Bậc sai phân tối ưu: $d = 1$** — Phù hợp với lý thuyết Random Walk của tài chính.
 
-> **Nhận xét:** Optuna-ARIMA đạt MAPE **0.95%** — vượt xa mục tiêu 5% đề ra, đồng thời là mô hình đơn lẻ tốt nhất trong pipeline. Kết quả cho thấy chiến lược tối ưu hóa out-of-sample bằng Optuna hiệu quả rõ rệt so với Auto-ARIMA truyền thống (MAPE giảm từ 4.28% xuống 0.95%, tương đương **77.8%**). Tập Test bao gồm 7 ngày giao dịch thực tế từ 16/05/2026 đến 26/05/2026.
-
----
-
-## 8. Thảo luận & Hướng phát triển
-
-### Giới hạn của mô hình & Lý thuyết Thị trường Hiệu quả (EMH)
-
-Mọi mô hình kỹ thuật (ARIMA, Prophet) đều dựa trên giả định **lịch sử có xu hướng lặp lại**. Tuy nhiên, theo **Efficient Market Hypothesis (EMH)**, giá cổ phiếu phản ánh tức thời toàn bộ thông tin công khai — điều này về mặt lý thuyết khiến việc dự báo vượt trội thị trường là bất khả thi. Trên thực tế, thị trường Việt Nam còn chịu tác động mạnh từ các **biến ngoại sinh (Exogenous Variables)** như chính sách lãi suất, báo cáo tài chính doanh nghiệp, và tâm lý nhà đầu tư — những yếu tố không được mã hóa trong chuỗi giá lịch sử.
-
-### Hướng nâng cấp đề xuất
-
-**1. Mô hình hóa trên Log Returns thay vì giá tuyệt đối**
-
-Về mặt Toán tài chính (Quantitative Finance), chuỗi giá tuyệt đối thường **không dừng (non-stationary)**. Phiên bản tiếp theo sẽ mô hình hóa trên **chuỗi lợi suất logarit**:
-
-$$R_t = \ln\left(\frac{P_t}{P_{t-1}}\right)$$
-
-Chuỗi $R_t$ mang tính **dừng (stationary)** tự nhiên, giúp các mô hình tự hồi quy hoạt động ổn định và chính xác hơn về mặt toán học.
-
-**2. Mô hình hóa biến động (Volatility Modeling — GARCH)**
-
-Tích hợp họ mô hình **GARCH (Generalized Autoregressive Conditional Heteroskedasticity)** để dự báo **biên độ rủi ro (phương sai có điều kiện)** thay vì chỉ dự báo giá trị kỳ vọng. Đây là bước thiết yếu trong định giá quyền chọn và quản lý rủi ro danh mục.
-
-**3. Tích hợp biến ngoại sinh (ARIMAX / Prophet with Regressors)**
-
-Bổ sung các regressors như: chỉ số VN-Index, tỷ giá USD/VND, lãi suất liên ngân hàng (VNIBOR), và khối lượng giao dịch — nhằm cải thiện khả năng dự báo của mô hình trong các giai đoạn thị trường biến động mạnh.
-
-**4. Triển khai hệ thống (MLOps)**
-
-Đóng gói mô hình dưới dạng **REST API** với `FastAPI` và xây dựng **Dashboard trực quan hóa** real-time bằng `Streamlit`, tạo thành một sản phẩm end-to-end có thể deploy lên cloud (Railway / Render / AWS).
+### 5.3 Chẩn Đoán Phần Dư
+- **Ljung-Box Test:** Phần dư không còn tự tương quan ($p > 0.05$ tại lag 10 và 20).
+- **Q-Q Plot:** Phần dư phân phối gần chuẩn.
 
 ---
 
-## 9. Tuyên bố miễn trách
+## 6. Kết Quả Từng Cấp Độ
 
-> Dự án này được phát triển **hoàn toàn phục vụ mục đích nghiên cứu và học thuật** trong khuôn khổ môn học. Các kết quả dự báo **không phải là lời khuyên hay khuyến nghị đầu tư tài chính**. Người đọc không nên đưa ra quyết định đầu tư dựa trên bất kỳ nội dung nào trong dự án này.
+| Cấp Độ | Mô Hình | Ưu Điểm Nổi Bật | Hạn Chế |
+| :---: | :--- | :--- | :--- |
+| **1** | Baseline (AR/MA/ARIMA) | Nền tảng vững chắc, xử lý tốt tính dừng | Giả định tuyến tính, nhạy cảm ngoại lai |
+| **2** | Optuna-ARIMA | Tối ưu out-of-sample giúp giảm overfitting | Mất thời gian search siêu tham số |
+| **3** | Meta Prophet | Tự phát hiện điểm gãy xu hướng, có tính mùa vụ | Đôi khi phản ứng chậm với biến động đột ngột |
+| **4** | Ensemble (ARIMA+Prophet) | Cân bằng giữa biến động ngắn hạn & xu hướng dài hạn | Cần thêm validation set để tìm trọng số $w$ |
+| **5** | ARIMA - Log Returns | Đảm bảo tính dừng tự nhiên | Tích luỹ sai số khi khôi phục ngược giá |
+| **6** | ARIMA - GARCH | Ước lượng rủi ro bằng khoảng tin cậy động | Cần chuỗi dữ liệu đủ dài để tối ưu GARCH |
+| **7** | ARIMAX (Macro Exog) | Tích hợp yếu tố vĩ mô (VN-Index, USD/VND) | Phụ thuộc dữ liệu ngoại sinh, có thể bị nhiễu |
+
+---
+
+## 7. Bảng Xếp Hạng Toàn Diện
+
+9 mô hình được đánh giá thông qua chiến lược **Walk-Forward Backtesting** trên 10 phiên test ẩn (03–16/06/2026). Bảng dưới đây tổng hợp các kết quả thực tế (MAE, RMSE, và MAPE) đạt được sau quá trình huấn luyện và tối ưu hệ thống:
+
+| Hạng | Mô Hình | Nhóm Phương Pháp | MAE (VNĐ) | RMSE (VNĐ) | MAPE (%) |
+| :---: | :--- | :--- | ---: | ---: | ---: |
+| 🥇 **1** | Ensemble (ARIMA+Prophet) | Nâng cao | 3,596 | 5,012 | 1.82% |
+| 🥈 **2** | ARIMA | Truyền thống | 3,871 | 5,356 | 1.96% |
+| 🥉 **3** | ARIMA-GARCH | Nâng cao | 3,871 | 5,356 | 1.96% |
+| **4** | ARIMAX | Nâng cao | 3,873 | 5,357 | 1.96% |
+| **5** | MA | Truyền thống | 3,936 | 5,500 | 1.99% |
+| **6** | AR | Truyền thống | 4,018 | 5,485 | 2.03% |
+| **7** | Optuna-ARIMA | Nâng cao | 4,081 | 5,562 | 2.07% |
+| **8** | Prophet | Nâng cao | 7,106 | 8,617 | 3.63% |
+| **9** | ARIMA-LogReturns | Nâng cao | 11,461 | 12,545 | 5.88% |
+
+### 📊 Dashboard So Sánh Trực Quan
+
+Dưới đây là Dashboard tổng hợp biểu diễn sự chênh lệch độ lỗi (MAE, RMSE, MAPE) cũng như quỹ đạo giá dự báo so với giá thực tế của cổ phiếu VIC trên tập Test (03/06 - 16/06).
+
+<div align="center">
+
+![Dashboard So sánh Toàn diện](output.png)
+
+</div>
+
+> 📌 **Ngưỡng Đánh Giá MAPE:**
+> - $< 5\%$: ✅ Xuất sắc — Dự báo đáng tin cậy.
+> - $5\% \sim 10\%$: 🟡 Chấp nhận được.
+> - $> 10\%$: ❌ Cần cải thiện.
+
+---
+
+## 8. Thảo Luận & Hướng Phát Triển
+
+### 8.1 Điểm Mạnh 
+- Triển khai **Walk-Forward Backtesting** giúp loại bỏ hoàn toàn hiện tượng rò rỉ dữ liệu (Data Leakage).
+- Kết hợp **Optuna HPO**, **Meta Prophet** và định lượng rủi ro động **GARCH** tạo nên một pipeline vững chắc, linh hoạt.
+- Cơ chế **Fallback tự động** trong ARIMAX giúp hệ thống không bị lỗi (crash) khi thiếu dữ liệu.
+
+### 8.2 Giới Hạn
+- Tập Test 10 ngày tương đối ngắn, có thể bị phụ thuộc vào điều kiện thị trường cục bộ.
+- Các mô hình thuần thống kê vẫn có nhược điểm trong việc nắm bắt các quan hệ phi tuyến tính sâu.
+
+### 8.3 Hướng Phát Triển Tiếp Theo
+- [ ] Tích hợp các mô hình Deep Learning: **LSTM, GRU, Temporal Fusion Transformer**.
+- [ ] Mở rộng Test Set (50–100 phiên) để đánh giá độ bền bỉ của mô hình.
+- [ ] Tích hợp chỉ số tâm lý thị trường (Sentiment Analysis) từ tin tức và mạng xã hội.
+
+---
+
+## 9. Tuyên Bố Miễn Trách
+
+> ⚠️ **Disclaimer:**
+> - Toàn bộ nội dung và mã nguồn trong repository này được xây dựng nhằm mục đích **nghiên cứu và học thuật**.
+> - Các kết quả dự báo **hoàn toàn KHÔNG phải là lời khuyên đầu tư tài chính**.
+> - Tác giả **không chịu trách nhiệm** về bất kỳ rủi ro hay quyết định đầu tư nào được thực hiện dựa trên hệ thống này.
 
 ---
 
 <div align="center">
 
-Made with dedication by **Trịnh Hải Đăng** (HE194363)
+**Trịnh Hải Đăng — HE194363 | AIE301m | Đại học FPT | 2025–2026**
 
-*"Predicting the market is hard. Understanding why it's hard is the real insight."*
-pip freeze > requirements.txt
+*"All models are wrong, but some are useful." — George E. P. Box*
+
 </div>
